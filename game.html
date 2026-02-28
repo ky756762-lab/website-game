@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Complete Web Game</title>
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+body {
+    background: linear-gradient(135deg, #141e30, #243b55);
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+}
+
+.game-container {
+    background: rgba(0,0,0,0.75);
+    padding: 20px;
+    border-radius: 12px;
+    width: 400px;
+    text-align: center;
+}
+
+h2 {
+    margin-bottom: 10px;
+}
+
+input, select {
+    width: 90%;
+    padding: 8px;
+    margin: 6px 0;
+}
+
+button {
+    padding: 8px 14px;
+    margin: 5px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    background: #00e5ff;
+    font-weight: bold;
+}
+
+.stats {
+    margin: 10px 0;
+    font-size: 14px;
+}
+
+.play-area {
+    position: relative;
+    width: 300px;
+    height: 300px;
+    background: #000;
+    margin: 10px auto;
+    border-radius: 10px;
+    border: 2px solid #00e5ff;
+}
+
+.box {
+    width: 40px;
+    height: 40px;
+    background: #00e5ff;
+    position: absolute;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.leaderboard {
+    text-align: left;
+    font-size: 13px;
+    margin-top: 10px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="game-container">
+    <h2>Click Game Ultimate</h2>
+
+    <input type="text" id="playerName" placeholder="Player name">
+
+    <select id="difficulty">
+        <option value="900">Easy</option>
+        <option value="650">Medium</option>
+        <option value="400">Hard</option>
+    </select>
+
+    <div class="stats">
+        Score: <span id="score">0</span> |
+        Time: <span id="time">30</span>s |
+        High Score: <span id="highScore">0</span>
+    </div>
+
+    <div class="play-area" id="playArea"></div>
+
+    <button onclick="startGame()">Start</button>
+    <button onclick="pauseGame()">Pause</button>
+    <button onclick="resumeGame()">Resume</button>
+
+    <div class="leaderboard" id="leaderboard"></div>
+</div>
+
+<script>
+const playArea = document.getElementById("playArea");
+const scoreEl = document.getElementById("score");
+const timeEl = document.getElementById("time");
+const highScoreEl = document.getElementById("highScore");
+const leaderboardEl = document.getElementById("leaderboard");
+
+let score = 0;
+let timeLeft = 30;
+let spawnSpeed = 800;
+let boxInterval;
+let timerInterval;
+let paused = false;
+
+let highScore = localStorage.getItem("highScore") || 0;
+let leaderboard = JSON.parse(localStorage.getItem("leaderboard")) || [];
+
+highScoreEl.textContent = highScore;
+
+function startGame() {
+    const name = document.getElementById("playerName").value.trim();
+    if (name === "") {
+        alert("Enter player name");
+        return;
+    }
+
+    score = 0;
+    timeLeft = 30;
+    paused = false;
+    spawnSpeed = document.getElementById("difficulty").value;
+
+    scoreEl.textContent = score;
+    timeEl.textContent = timeLeft;
+    playArea.innerHTML = "";
+
+    clearInterval(boxInterval);
+    clearInterval(timerInterval);
+
+    spawnBox();
+    boxInterval = setInterval(spawnBox, spawnSpeed);
+    timerInterval = setInterval(updateTimer, 1000);
+}
+
+function spawnBox() {
+    if (paused) return;
+
+    playArea.innerHTML = "";
+    const box = document.createElement("div");
+    box.className = "box";
+
+    const maxX = playArea.clientWidth - 40;
+    const maxY = playArea.clientHeight - 40;
+
+    box.style.left = Math.random() * maxX + "px";
+    box.style.top = Math.random() * maxY + "px";
+
+    box.onclick = () => {
+        score++;
+        scoreEl.textContent = score;
+        playArea.innerHTML = "";
+    };
+
+    playArea.appendChild(box);
+}
+
+function updateTimer() {
+    if (paused) return;
+
+    timeLeft--;
+    timeEl.textContent = timeLeft;
+
+    if (timeLeft <= 0) {
+        endGame();
+    }
+}
+
+function pauseGame() {
+    paused = true;
+}
+
+function resumeGame() {
+    paused = false;
+}
+
+function endGame() {
+    clearInterval(boxInterval);
+    clearInterval(timerInterval);
+    playArea.innerHTML = "";
+
+    const name = document.getElementById("playerName").value;
+
+    if (score > highScore) {
+        highScore = score;
+        localStorage.setItem("highScore", highScore);
+    }
+
+    leaderboard.push({ name, score });
+    leaderboard.sort((a, b) => b.score - a.score);
+    leaderboard = leaderboard.slice(0, 5);
+
+    localStorage.setItem("leaderboard", JSON.stringify(leaderboard));
+    highScoreEl.textContent = highScore;
+
+    showLeaderboard();
+    alert("Game Over. Score: " + score);
+}
+
+function showLeaderboard() {
+    let html = "<b>Leaderboard</b><br>";
+    leaderboard.forEach((p, i) => {
+        html += (i + 1) + ". " + p.name + " - " + p.score + "<br>";
+    });
+    leaderboardEl.innerHTML = html;
+}
+
+showLeaderboard();
+</script>
+
+</body>
+</html>
